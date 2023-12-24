@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>近似装箱---O(NlogN)的适应算法 | Mrzjheng博客本博</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="算法系列第二篇博客文章本文讨论的是近似装箱问题中的联机算法且本文所提出的改进算法不太适合用于内存分配问题following are details.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="近似装箱---O(NlogN)的适应算法">
+<meta property="og:url" content="http://example.com/2023/11/19/%E6%94%B9%E8%89%AF%E7%89%88%E9%80%82%E5%BA%94%E7%AE%97%E6%B3%95/index.html">
+<meta property="og:site_name" content="Mrzjheng博客本博">
+<meta property="og:description" content="算法系列第二篇博客文章本文讨论的是近似装箱问题中的联机算法且本文所提出的改进算法不太适合用于内存分配问题following are details.">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2023-11-19T10:47:30.000Z">
+<meta property="article:modified_time" content="2023-12-23T18:01:39.978Z">
+<meta property="article:author" content="Mrzjheng">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Mrzjheng博客本博" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/typeface-source-code-pro@0.0.71/index.min.css">
+
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Mrzjheng博客本博</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-改良版适应算法" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2023/11/19/%E6%94%B9%E8%89%AF%E7%89%88%E9%80%82%E5%BA%94%E7%AE%97%E6%B3%95/" class="article-date">
+  <time class="dt-published" datetime="2023-11-19T10:47:30.000Z" itemprop="datePublished">2023-11-19</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      近似装箱---O(NlogN)的适应算法
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p><strong>算法系列第二篇博客文章</strong><br><em>本文讨论的是近似装箱问题中的联机算法且本文所提出的改进算法不太适合用于内存分配问题</em><br>following are details.</p>
+<span id="more"></span>
+
+<p>一、<a href="#%E8%83%8C%E6%99%AF">背景</a><br>二、<a href="#%E4%B8%80%E8%88%AC%E7%9A%84%E9%80%82%E5%BA%94%E7%AE%97%E6%B3%95">一般的适应算法</a><br>三、<a href="#%E6%94%B9%E8%89%AF%E7%89%88%E9%80%82%E5%BA%94%E7%AE%97%E6%B3%95">改良版适应算法</a>  </p>
+<h1 id="一、背景"><a href="#一、背景" class="headerlink" title="一、背景"></a>一、背景</h1><h2 id="1-近似装箱问题"><a href="#1-近似装箱问题" class="headerlink" title="1.近似装箱问题"></a>1.近似装箱问题</h2><p>将N个大小为 s<sub>i</sub> 的物品，s<sub>i</sub> $\le$ 1,i&#x3D;1,2,…,N，放入多个大小为1的箱子中，需要多少个箱子？</p>
+<h2 id="2-两类算法"><a href="#2-两类算法" class="headerlink" title="2.两类算法"></a>2.两类算法</h2><p>联机算法：对输入数据依次处理，必须将一件物品放入一个箱子之后才处理下一件物品。<br>脱机算法：做任何事都需要等到所有的输入数据全被读入之后才进行。<br><em>（本文只讨论联机算法）</em>    </p>
+<h1 id="二、一般的适应算法"><a href="#二、一般的适应算法" class="headerlink" title="二、一般的适应算法"></a>二、一般的适应算法</h1><h2 id="1-下项适应算法"><a href="#1-下项适应算法" class="headerlink" title="1.下项适应算法"></a>1.下项适应算法</h2><p>对于每一个物品，查看上一个箱子的剩余空间是否足够放入该物品，若无法放入，则开辟一个新箱子。该算法以线性时间运行，若最优装箱用箱M个，则该算法用箱不超过2M-2个。  </p>
+<h2 id="2-首次适应算法"><a href="#2-首次适应算法" class="headerlink" title="2.首次适应算法"></a>2.首次适应算法</h2><p>对于每一个物品，依次查看每个箱子的剩余空间，将物品放入查找到的第一个具有足够剩余空间的箱子中，若无适合的箱子，则开辟一个新箱子。该算法的时间复杂度为 O(N<sup>2</sup>) ，若最优装箱用箱M个，则该算法用箱不超过1.7M向上取整个。  </p>
+<h2 id="3-最佳适应算法"><a href="#3-最佳适应算法" class="headerlink" title="3.最佳适应算法"></a>3.最佳适应算法</h2><p>对于每一个物品，查看所有箱子的剩余空间，将该物品放入一个足以放入该物品且使得箱子最满的箱子，若无适合的箱子，则开辟一个新箱子。该算法的时间复杂度为 O(N<sup>2</sup>) ，若最优装箱用箱M个，则该算法用箱不超过1.7M向上取整个。</p>
+<h1 id="三、改良版适应算法"><a href="#三、改良版适应算法" class="headerlink" title="三、改良版适应算法"></a>三、改良版适应算法</h1><p>为了减少查找有足够空间的箱子的时间，使用优先队列存放箱子数据。<br>以基于二叉堆的优先队列为例，使用大顶堆保存每个箱子的剩余空间。<br>对于每个物品，查看顶点箱子是否有足够的容纳空间。若足够放入，则重新计算该箱子剩余空间大小并下调二叉堆(或是取出该箱子，放入物品后将该箱子置于优先队列尾部，上调二叉堆)；若无法放入，则开辟一个新箱子，将物品放入后计算该箱子剩余空间并将其放入优先队列尾部，上调二叉堆。<br>该算法对每个物品操作的时间复杂度均为O(logN)，整个算法的时间复杂度为O(NlogN)。所需箱子数上限具体多少我也不知道，猜测应该接近首次适应算法。<del><em>如果有谁算出来了记得告诉我，我也想知道</em></del>  </p>
+<h2 id="It’s-the-end-of-the-article-创作不易，转载请标明出处"><a href="#It’s-the-end-of-the-article-创作不易，转载请标明出处" class="headerlink" title="It’s the end of the article.创作不易，转载请标明出处"></a><strong>It’s the end of the article.创作不易，转载请标明出处</strong></h2>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2023/11/19/%E6%94%B9%E8%89%AF%E7%89%88%E9%80%82%E5%BA%94%E7%AE%97%E6%B3%95/" data-id="clqj9atbi0001vcuk4v4t57p8" data-title="近似装箱---O(NlogN)的适应算法" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2023/12/24/%E5%A5%BD%E5%83%8F%E6%B2%A1%E4%BB%80%E4%B9%88%E7%94%A8%E7%B3%BB%E5%88%97%E4%B8%80%E4%B9%8B%E7%BC%A9%E5%87%8F%E5%9B%BE%E7%89%87%E5%86%85%E5%AD%98/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          缩减图片内存
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2022/11/16/%E7%AE%97%E6%B3%95%E4%B8%80%E5%AF%BB1%E6%95%B0%E9%87%8F/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">O(1)复杂度求二进制中1的个数</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/12/">December 2023</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/11/">November 2023</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/11/">November 2022</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2023/12/24/%E5%A5%BD%E5%83%8F%E6%B2%A1%E4%BB%80%E4%B9%88%E7%94%A8%E7%B3%BB%E5%88%97%E4%B8%80%E4%B9%8B%E7%BC%A9%E5%87%8F%E5%9B%BE%E7%89%87%E5%86%85%E5%AD%98/">缩减图片内存</a>
+          </li>
+        
+          <li>
+            <a href="/2023/11/19/%E6%94%B9%E8%89%AF%E7%89%88%E9%80%82%E5%BA%94%E7%AE%97%E6%B3%95/">近似装箱---O(NlogN)的适应算法</a>
+          </li>
+        
+          <li>
+            <a href="/2022/11/16/%E7%AE%97%E6%B3%95%E4%B8%80%E5%AF%BB1%E6%95%B0%E9%87%8F/">O(1)复杂度求二进制中1的个数</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2023 Mrzjheng<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+</body>
+</html>
